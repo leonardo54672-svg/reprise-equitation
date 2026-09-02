@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Mes reprises</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="description" content="Suivi des séances d'équitation par carte de 10.">
+
+<!-- Sécurité : aucune ressource externe autorisée, aucune requête sortante possible. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+
+<!-- PWA -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#F4F4F0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+
+<!-- iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Reprises">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="icon" href="./icons/icon-192.png">
+
+<style>
+:root{
+  --bg:#F4F4F0;
+  --card:#FFFFFF;
+  --text:#17211C;
+  --muted:#6B7570;
+  --line:rgba(23,33,28,.10);
+  --accent:#2E5A46;
+  --accent-ink:#FFFFFF;
+  --track:rgba(46,90,70,.14);
+  --track-2:rgba(46,90,70,.07);
+  --danger:#B3261E;
+  --shadow:0 1px 2px rgba(23,33,28,.06);
+  --radius:18px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#000000;
+    --card:#151A18;
+    --text:#F2F4F3;
+    --muted:#8C9691;
+    --line:rgba(242,244,243,.12);
+    --accent:#4E9A78;
+    --accent-ink:#06120D;
+    --track:rgba(78,154,120,.24);
+    --track-2:rgba(78,154,120,.10);
+    --danger:#FF6961;
+    --shadow:none;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
+  font-size:17px;
+  line-height:1.4;
+  -webkit-font-smoothing:antialiased;
+  padding:calc(env(safe-area-inset-top) + 20px) calc(env(safe-area-inset-right) + 16px)
+          calc(env(safe-area-inset-bottom) + 32px) calc(env(safe-area-inset-left) + 16px);
+}
+.wrap{max-width:480px;margin:0 auto}
+
+h1{font-size:28px;line-height:1.15;font-weight:700;letter-spacing:-.02em;margin:0}
+.tagline{color:var(--muted);font-size:15px;margin:4px 0 22px}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:20px;
+}
+
+/* --- Carte en cours --- */
+.hero .pack{font-size:16px;font-weight:600}
+.hero .bought{font-size:14px;color:var(--muted);margin-top:2px}
+.count{
+  margin-top:14px;
+  font-size:46px;font-weight:700;letter-spacing:-.03em;line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+.count .total{color:var(--muted);font-weight:600}
+.remaining{margin-top:8px;font-size:16px;color:var(--muted)}
+.hero.none .count{font-size:22px;letter-spacing:-.01em;margin-top:6px}
+.segments{display:flex;gap:5px;margin-top:20px}
+.segments span{flex:1;height:11px;border-radius:6px;background:var(--track);transition:background .25s ease}
+.segments span.on{background:var(--accent)}
+
+/* --- Boutons --- */
+.actions{margin-top:16px;display:flex;flex-direction:column;gap:10px}
+button{font-family:inherit;font-size:17px;cursor:pointer;border:none;color:inherit}
+.btn{
+  display:block;width:100%;min-height:56px;border-radius:16px;
+  font-weight:600;letter-spacing:-.01em;
+  transition:opacity .15s ease,transform .08s ease;
+}
+.btn:active{transform:scale(.985);opacity:.85}
+.btn-primary{background:var(--accent);color:var(--accent-ink)}
+.btn-secondary{background:var(--card);color:var(--accent);border:1px solid var(--line);min-height:50px}
+.btn-quiet{background:transparent;color:var(--muted);min-height:44px;font-size:15px;font-weight:500}
+.btn:focus-visible,.icon-btn:focus-visible,.pack-row:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* --- Sections --- */
+section{margin-top:30px}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;margin:0 4px 10px}
+h2{font-size:17px;font-weight:600;letter-spacing:-.01em;margin:0}
+.section-head .meta{font-size:14px;color:var(--muted)}
+
+.list{
+  background:var(--card);border:1px solid var(--line);
+  border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);
+}
+.row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-top:1px solid var(--line)}
+.row:first-child{border-top:none}
+.row .idx{
+  width:26px;height:26px;flex:none;border-radius:50%;
+  background:var(--track);color:var(--accent);
+  font-size:13px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;
+  font-variant-numeric:tabular-nums;
+}
+.row .info{flex:1;min-width:0}
+.row .date{font-size:16px;font-variant-numeric:tabular-nums}
+.row .day{font-size:13px;color:var(--muted);text-transform:capitalize}
+.icon-btn{flex:none;width:34px;height:34px;border-radius:50%;background:transparent;color:var(--muted);font-size:19px;line-height:1}
+.icon-btn:active{background:var(--track)}
+.empty{padding:18px 16px;color:var(--muted);font-size:15px}
+
+/* --- Statistiques + calendrier --- */
+.stats{display:flex;text-align:center}
+.stat{flex:1;padding:4px 2px}
+.stat .v{font-size:24px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat .k{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.25}
+.grid{margin-top:20px;display:flex;flex-direction:column;gap:5px}
+.grow{display:flex;align-items:center;gap:8px}
+.mlabel{width:50px;flex:none;font-size:11px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.cells{flex:1;display:flex;gap:2px}
+.cell{flex:1;height:9px;border-radius:2px;background:var(--track-2)}
+.cell.void{background:transparent}
+.cell.on{background:var(--accent)}
+.cell.today{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.legend{margin-top:14px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:7px}
+.legend i{width:9px;height:9px;border-radius:2px;background:var(--accent);display:inline-block}
+
+/* --- Liste des cartes --- */
+.pack-row{display:block;width:100%;text-align:left;background:transparent;padding:14px 16px;border-top:1px solid var(--line);font-size:17px}
+.list .pack-row:first-child{border-top:none}
+.pack-row:active{background:var(--track-2)}
+.pack-top{display:flex;align-items:center;gap:8px}
+.pack-top .title{font-weight:600;font-size:16px}
+.pill{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--track);color:var(--accent)}
+.pill.grey{background:var(--track-2);color:var(--muted)}
+.pack-row .detail{font-size:14px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+.chev{margin-left:auto;color:var(--muted);font-size:15px;transition:transform .2s ease}
+.pack-row[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.details{background:var(--track-2);border-top:1px solid var(--line)}
+.details .row{padding:10px 16px 10px 22px}
+.details .row:first-child{border-top:none}
+.del-pack{padding:12px 16px 14px 22px}
+.del-pack button{color:var(--danger);font-size:15px;font-weight:500;background:transparent;padding:0}
+
+.tools{margin-top:28px;display:flex;flex-direction:column;gap:2px;align-items:center}
+.foot{margin-top:18px;text-align:center;font-size:12px;color:var(--muted);line-height:1.5}
+
+/* --- Modales --- */
+.scrim{
+  position:fixed;inset:0;background:rgba(0,0,0,.4);
+  display:flex;align-items:flex-end;justify-content:center;
+  padding:16px;padding-bottom:calc(env(safe-area-inset-bottom) + 16px);
+  opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:50;
+}
+.scrim.open{opacity:1;pointer-events:auto}
+.sheet{
+  width:100%;max-width:480px;background:var(--card);
+  border-radius:22px;padding:22px 20px 16px;
+  transform:translateY(14px);transition:transform .22s cubic-bezier(.32,.72,0,1);
+}
+.scrim.open .sheet{transform:translateY(0)}
+.sheet h3{margin:0 0 6px;font-size:19px;font-weight:600;letter-spacing:-.01em}
+.sheet p{margin:0 0 18px;color:var(--muted);font-size:15px}
+.sheet .btn+.btn{margin-top:8px}
+.btn-danger{background:var(--danger);color:#fff}
+input[type=date]{
+  width:100%;min-height:54px;padding:0 14px;margin-bottom:16px;
+  font-family:inherit;font-size:17px;color:var(--text);
+  background:var(--bg);border:1px solid var(--line);border-radius:14px;
+}
+
+.toast{
+  position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);
+  transform:translate(-50%,12px);
+  background:var(--text);color:var(--bg);
+  padding:12px 18px;border-radius:14px;font-size:15px;font-weight:500;
+  max-width:calc(100% - 40px);text-align:center;
+  opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease;z-index:60;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.hidden{display:none !important}
+
+@media (prefers-reduced-motion: reduce){*{transition:none !important;animation:none !important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Mes reprises</h1>
+    <p class="tagline">Suivi des cartes de 10 séances</p>
+  </header>
+
+  <div class="card hero" id="hero">
+    <div class="pack" id="packLabel">Aucune carte enregistrée</div>
+    <div class="bought" id="packBought"></div>
+    <div class="count" id="countBox"></div>
+    <div class="remaining" id="remaining"></div>
+    <div class="segments" id="segments" aria-hidden="true"></div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-primary" id="addToday">Ajouter une séance</button>
+    <button class="btn btn-secondary" id="addOther">Ajouter une autre date</button>
+    <button class="btn btn-secondary" id="addCard">Ajouter une carte de 10 séances</button>
+  </div>
+
+  <section id="currentSection">
+    <div class="section-head">
+      <h2>Séances de la carte en cours</h2>
+      <span class="meta" id="currentMeta"></span>
+    </div>
+    <div class="list" id="sessions"></div>
+  </section>
+
+  <section id="statsSection">
+    <div class="section-head">
+      <h2>Toutes mes séances</h2>
+      <span class="meta" id="statsMeta"></span>
+    </div>
+    <div class="card">
+      <div class="stats">
+        <div class="stat"><div class="v" id="statTotal">0</div><div class="k">séances au total</div></div>
+        <div class="stat"><div class="v" id="statCards">0</div><div class="k">cartes terminées</div></div>
+        <div class="stat"><div class="v" id="statRhythm">—</div><div class="k">entre 2 séances</div></div>
+      </div>
+      <div class="grid" id="grid"></div>
+      <div class="legend"><i></i> une case pleine = une séance</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Mes cartes</h2>
+      <span class="meta" id="packsMeta"></span>
+    </div>
+    <div class="list" id="packs"></div>
+  </section>
+
+  <div class="tools">
+    <button class="btn btn-quiet" id="exportBtn">Exporter mes données (CSV)</button>
+    <button class="btn btn-quiet" id="importBtn">Restaurer une sauvegarde</button>
+    <input type="file" id="importFile" accept=".csv,text/csv" class="hidden">
+  </div>
+
+  <p class="foot" id="storageNote">Données enregistrées sur cet iPhone uniquement.</p>
+</div>
+
+<div class="scrim" id="confirmScrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <h3 id="confirmTitle"></h3>
+    <p id="confirmText"></p>
+    <button class="btn btn-primary" id="confirmOk">Confirmer</button>
+    <button class="btn btn-secondary" id="confirmCancel">Annuler</button>
+  </div>
+</div>
+
+<div class="scrim" id="dateScrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dateTitle">
+    <h3 id="dateTitle">Choisir une date</h3>
+    <p id="dateText">Sélectionnez le jour de la séance à ajouter.</p>
+    <input type="date" id="dateInput">
+    <button class="btn btn-primary" id="dateOk">Ajouter</button>
+    <button class="btn btn-secondary" id="dateCancel">Annuler</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var KEY = 'reprises.v2';
+  var OLD_KEY = 'reprises.v1';
+  var SIZE = 10; // nombre de séances par carte
+
+  /* ---------- Stockage (repli mémoire si localStorage indisponible) ---------- */
+  var memoryOnly = false, memoryStore = null;
+
+  function readRaw(key) {
+    if (memoryOnly) return memoryStore;
+    try { return window.localStorage.getItem(key); }
+    catch (e) { memoryOnly = true; return memoryStore; }
+  }
+  function writeRaw(value) {
+    if (!memoryOnly) {
+      try { window.localStorage.setItem(KEY, value); return; }
+      catch (e) { memoryOnly = true; }
+    }
+    memoryStore = value;
+  }
+
+  /* ---------- Dates ---------- */
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function isoOf(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function todayISO() { return isoOf(new Date()); }
+  function toDate(iso) { return new Date(iso + 'T00:00:00'); }
+  function fmt(iso) { var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+  function frToIso(s) {
+    var m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec((s || '').trim());
+    return m ? m[3] + '-' + m[2] + '-' + m[1] : null;
+  }
+  function weekday(iso) { return toDate(iso).toLocaleDateString('fr-FR', { weekday: 'long' }); }
+  function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+  /* ---------- État ---------- */
+  var state;
+  var openPack = null;
+
+  function blankState() { return { version: 2, size: SIZE, cards: [] }; }
+
+  function load() {
+    var raw = readRaw(KEY);
+    if (raw) {
+      try {
+        var p = JSON.parse(raw);
+        state = { version: 2, size: SIZE, cards: Array.isArray(p.cards) ? p.cards : [] };
+        normalise();
+        return;
+      } catch (e) { /* repli ci-dessous */ }
+    }
+    var old = readRaw(OLD_KEY);
+    if (old) {
+      try { state = migrateV1(JSON.parse(old)); normalise(); return; } catch (e) {}
+    }
+    state = blankState();
+  }
+
+  function migrateV1(p) {
+    var cards = [];
+    (Array.isArray(p.archives) ? p.archives : []).forEach(function (a) {
+      cards.push({ id: newId(), number: a.number, purchase: null, sessions: a.sessions || [] });
+    });
+    if (p.current) {
+      cards.push({ id: newId(), number: p.current.number, purchase: null, sessions: p.current.sessions || [] });
+    }
+    return { version: 2, size: SIZE, cards: cards };
+  }
+
+  function normalise() {
+    state.cards = state.cards.filter(function (c) { return c && Array.isArray(c.sessions); });
+    state.cards.forEach(function (c) {
+      if (!c.id) c.id = newId();
+      c.sessions.forEach(function (s) { if (!s.id) s.id = newId(); });
+      c.sessions.sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    });
+    state.cards.sort(function (a, b) { return a.number - b.number; });
+  }
+
+  function save() { normalise(); writeRaw(JSON.stringify(state)); }
+
+  function activeCard() {
+    for (var i = 0; i < state.cards.length; i++) {
+      if (state.cards[i].sessions.length < state.size) return state.cards[i];
+    }
+    return null;
+  }
+  function nextNumber() {
+    return state.cards.reduce(function (m, c) { return Math.max(m, c.number); }, 0) + 1;
+  }
+  function allSessions() {
+    var out = [];
+    state.cards.forEach(function (c) { c.sessions.forEach(function (s) { out.push(s); }); });
+    out.sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    return out;
+  }
+
+  /* ---------- Rendu ---------- */
+  function el(id) { return document.getElementById(id); }
+
+  function render() {
+    var active = activeCard();
+    var hero = el('hero');
+    var box = el('countBox');
+    box.textContent = '';
+
+    // Sans carte active, on continue d'afficher la dernière carte, terminée.
+    var shown = active || (state.cards.length ? state.cards[state.cards.length - 1] : null);
+
+    if (shown) {
+      var used = shown.sessions.length, left = state.size - used;
+      hero.classList.remove('none');
+      el('packLabel').textContent = 'Carte n°' + shown.number;
+      el('packBought').textContent = shown.purchase
+        ? 'Achetée le ' + fmt(shown.purchase)
+        : 'Date d\u2019achat non renseignée';
+      var big = document.createElement('span');
+      big.textContent = String(used);
+      var tot = document.createElement('span');
+      tot.className = 'total';
+      tot.textContent = ' / ' + state.size;
+      box.appendChild(big); box.appendChild(tot);
+      el('remaining').textContent = active
+        ? left + (left > 1 ? ' séances restantes' : ' séance restante')
+        : 'Carte terminée. Ajoutez une nouvelle carte pour continuer.';
+    } else {
+      hero.classList.add('none');
+      el('packLabel').textContent = 'Aucune carte enregistrée';
+      el('packBought').textContent = '';
+      box.textContent = '';
+      el('remaining').textContent = 'Ajoutez une carte pour enregistrer vos séances.';
+    }
+
+    var seg = el('segments');
+    seg.textContent = '';
+    for (var i = 0; i < state.size; i++) {
+      var s = document.createElement('span');
+      if (shown && i < shown.sessions.length) s.className = 'on';
+      seg.appendChild(s);
+    }
+
+    el('addToday').classList.toggle('hidden', !active);
+    el('addOther').classList.toggle('hidden', !active);
+    el('addCard').className = 'btn ' + (active ? 'btn-secondary' : 'btn-primary');
+
+    renderCurrent(active);
+    renderStats();
+    renderPacks();
+
+    el('storageNote').textContent = memoryOnly
+      ? 'Stockage du navigateur indisponible : les données ne seront pas conservées.'
+      : 'Données enregistrées sur cet iPhone uniquement. Exportez le CSV après chaque carte terminée.';
+  }
+
+  function renderCurrent(active) {
+    var list = el('sessions');
+    list.textContent = '';
+    el('currentSection').classList.toggle('hidden', !active);
+    if (!active) return;
+    el('currentMeta').textContent = active.sessions.length + '/' + state.size;
+    if (!active.sessions.length) {
+      var e = document.createElement('div');
+      e.className = 'empty';
+      e.textContent = 'Aucune séance sur cette carte. Touchez « Ajouter une séance » après votre reprise.';
+      list.appendChild(e);
+      return;
+    }
+    for (var k = active.sessions.length - 1; k >= 0; k--) {
+      list.appendChild(sessionRow(active.sessions[k], k + 1));
+    }
+  }
+
+  function sessionRow(item, rank) {
+    var row = document.createElement('div');
+    row.className = 'row';
+
+    var idx = document.createElement('div');
+    idx.className = 'idx';
+    idx.textContent = String(rank);
+
+    var info = document.createElement('div');
+    info.className = 'info';
+    var d = document.createElement('div');
+    d.className = 'date';
+    d.textContent = fmt(item.date);
+    var w = document.createElement('div');
+    w.className = 'day';
+    w.textContent = weekday(item.date);
+    info.appendChild(d); info.appendChild(w);
+
+    var del = document.createElement('button');
+    del.className = 'icon-btn';
+    del.setAttribute('aria-label', 'Supprimer la séance du ' + fmt(item.date));
+    del.textContent = '\u2715';
+    del.addEventListener('click', function (ev) { ev.stopPropagation(); askDeleteSession(item); });
+
+    row.appendChild(idx); row.appendChild(info); row.appendChild(del);
+    return row;
+  }
+
+  /* --- Calendrier de toutes les séances : 12 derniers mois --- */
+  function renderStats() {
+    var all = allSessions();
+    el('statTotal').textContent = String(all.length);
+    el('statCards').textContent = String(state.cards.filter(function (c) {
+      return c.sessions.length >= state.size;
+    }).length);
+
+    if (all.length >= 2) {
+      var recent = all.slice(-8), gaps = [];
+      for (var i = 1; i < recent.length; i++) {
+        gaps.push((toDate(recent[i].date) - toDate(recent[i - 1].date)) / 86400000);
+      }
+      var avg = gaps.reduce(function (a, b) { return a + b; }, 0) / gaps.length;
+      el('statRhythm').textContent = Math.round(avg) + ' j';
+    } else {
+      el('statRhythm').textContent = '—';
+    }
+
+    var set = {};
+    all.forEach(function (s) { set[s.date] = true; });
+
+    var today = new Date();
+    var todayIso = todayISO();
+    var grid = el('grid');
+    grid.textContent = '';
+
+    for (var m = 11; m >= 0; m--) {
+      var ref = new Date(today.getFullYear(), today.getMonth() - m, 1);
+      var days = new Date(ref.getFullYear(), ref.getMonth() + 1, 0).getDate();
+
+      var row = document.createElement('div');
+      row.className = 'grow';
+
+      var label = document.createElement('div');
+      label.className = 'mlabel';
+      label.textContent = ref.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '')
+        + ' ' + String(ref.getFullYear()).slice(2);
+
+      var cells = document.createElement('div');
+      cells.className = 'cells';
+      for (var d = 1; d <= 31; d++) {
+        var c = document.createElement('div');
+        if (d > days) {
+          c.className = 'cell void';
+        } else {
+          var iso = ref.getFullYear() + '-' + pad(ref.getMonth() + 1) + '-' + pad(d);
+          c.className = 'cell' + (set[iso] ? ' on' : '') + (iso === todayIso && !set[iso] ? ' today' : '');
+          if (set[iso]) c.title = fmt(iso);
+        }
+        cells.appendChild(c);
+      }
+
+      row.appendChild(label); row.appendChild(cells);
+      grid.appendChild(row);
+    }
+
+    var limit = new Date(today.getFullYear(), today.getMonth() - 11, 1);
+    var older = all.filter(function (s) { return toDate(s.date) < limit; }).length;
+    el('statsMeta').textContent = older ? older + ' avant cette période' : '';
+  }
+
+  /* --- Liste des cartes, dépliables --- */
+  function renderPacks() {
+    var box = el('packs');
+    box.textContent = '';
+    el('packsMeta').textContent = state.cards.length ? String(state.cards.length) : '';
+    if (!state.cards.length) {
+      var e = document.createElement('div');
+      e.className = 'empty';
+      e.textContent = 'Aucune carte. Touchez « Ajouter une carte de 10 séances ».';
+      box.appendChild(e);
+      return;
+    }
+    var active = activeCard();
+    for (var i = state.cards.length - 1; i >= 0; i--) {
+      var c = state.cards[i];
+      box.appendChild(packRow(c, active));
+      if (openPack === c.id) box.appendChild(packDetails(c));
+    }
+  }
+
+  function packRow(c, active) {
+    var n = c.sessions.length;
+    var full = n >= state.size;
+    var isActive = !!active && active.id === c.id;
+
+    var b = document.createElement('button');
+    b.className = 'pack-row';
+    b.setAttribute('aria-expanded', openPack === c.id ? 'true' : 'false');
+
+    var top = document.createElement('div');
+    top.className = 'pack-top';
+    var t = document.createElement('span');
+    t.className = 'title';
+    t.textContent = 'Carte n°' + c.number;
+    var pill = document.createElement('span');
+    pill.className = 'pill' + (isActive ? '' : ' grey');
+    pill.textContent = isActive ? 'En cours' : (full ? 'Terminée' : 'En attente');
+    var chev = document.createElement('span');
+    chev.className = 'chev';
+    chev.textContent = '\u203A';
+    top.appendChild(t); top.appendChild(pill); top.appendChild(chev);
+
+    var d1 = document.createElement('div');
+    d1.className = 'detail';
+    d1.textContent = c.purchase ? 'Achetée le ' + fmt(c.purchase) : 'Date d\u2019achat non renseignée';
+
+    var d2 = document.createElement('div');
+    d2.className = 'detail';
+    d2.textContent = n
+      ? n + (n > 1 ? ' séances réalisées' : ' séance réalisée')
+        + ' — du ' + fmt(c.sessions[0].date) + ' au ' + fmt(c.sessions[n - 1].date)
+      : 'Aucune séance utilisée';
+
+    b.appendChild(top); b.appendChild(d1); b.appendChild(d2);
+    b.addEventListener('click', function () {
+      openPack = (openPack === c.id) ? null : c.id;
+      renderPacks();
+    });
+    return b;
+  }
+
+  function packDetails(c) {
+    var wrap = document.createElement('div');
+    wrap.className = 'details';
+    if (c.sessions.length) {
+      for (var k = c.sessions.length - 1; k >= 0; k--) {
+        wrap.appendChild(sessionRow(c.sessions[k], k + 1));
+      }
+    } else {
+      var box = document.createElement('div');
+      box.className = 'del-pack';
+      var del = document.createElement('button');
+      del.textContent = 'Supprimer cette carte';
+      del.addEventListener('click', function () { askDeleteCard(c); });
+      box.appendChild(del);
+      wrap.appendChild(box);
+    }
+    return wrap;
+  }
+
+  /* ---------- Toast ---------- */
+  var toastTimer;
+  function toast(msg) {
+    var t = el('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2600);
+  }
+
+  /* ---------- Modale de confirmation ---------- */
+  var pendingConfirm = null;
+  function confirmSheet(o) {
+    el('confirmTitle').textContent = o.title;
+    el('confirmText').textContent = o.text;
+    var ok = el('confirmOk');
+    ok.textContent = o.okLabel || 'Confirmer';
+    ok.className = 'btn ' + (o.danger ? 'btn-danger' : 'btn-primary');
+    pendingConfirm = o.onConfirm;
+    el('confirmScrim').classList.add('open');
+  }
+  function closeConfirm() { el('confirmScrim').classList.remove('open'); pendingConfirm = null; }
+  el('confirmCancel').addEventListener('click', closeConfirm);
+  el('confirmOk').addEventListener('click', function () {
+    var fn = pendingConfirm; closeConfirm(); if (fn) fn();
+  });
+  el('confirmScrim').addEventListener('click', function (e) {
+    if (e.target === el('confirmScrim')) closeConfirm();
+  });
+
+  /* ---------- Modale date ---------- */
+  var dateMode = 'session';
+  function openDateSheet(mode) {
+    dateMode = mode;
+    if (mode === 'card') {
+      el('dateTitle').textContent = 'Nouvelle carte de 10 séances';
+      el('dateText').textContent = 'Indiquez la date d\u2019achat de la carte.';
+      el('dateOk').textContent = 'Ajouter la carte';
+    } else {
+      el('dateTitle').textContent = 'Choisir une date';
+      el('dateText').textContent = 'Sélectionnez le jour de la séance à ajouter.';
+      el('dateOk').textContent = 'Ajouter la séance';
+    }
+    el('dateInput').value = todayISO();
+    el('dateScrim').classList.add('open');
+  }
+  function closeDateSheet() { el('dateScrim').classList.remove('open'); }
+  el('dateCancel').addEventListener('click', closeDateSheet);
+  el('dateScrim').addEventListener('click', function (e) {
+    if (e.target === el('dateScrim')) closeDateSheet();
+  });
+
+  /* ---------- Actions ---------- */
+  function addSession(iso) {
+    var active = activeCard();
+    if (!active) { toast('Ajoutez d\u2019abord une carte.'); return; }
+    active.sessions.push({ id: newId(), date: iso });
+    save(); render();
+    toast('Séance du ' + fmt(iso) + ' ajoutée.');
+  }
+  function hasDate(iso) {
+    var a = activeCard();
+    return !!a && a.sessions.some(function (s) { return s.date === iso; });
+  }
+
+  el('addToday').addEventListener('click', function () {
+    var iso = todayISO();
+    if (hasDate(iso)) { toast('Séance déjà enregistrée aujourd\u2019hui.'); return; }
+    addSession(iso);
+  });
+  el('addOther').addEventListener('click', function () { openDateSheet('session'); });
+  el('addCard').addEventListener('click', function () { openDateSheet('card'); });
+
+  el('dateOk').addEventListener('click', function () {
+    var iso = el('dateInput').value;
+    if (!iso) { toast('Choisissez une date.'); return; }
+    closeDateSheet();
+
+    if (dateMode === 'card') {
+      var num = nextNumber();
+      var pending = state.cards.filter(function (c) { return c.sessions.length === 0; }).length;
+      var go = function () {
+        state.cards.push({ id: newId(), number: num, purchase: iso, sessions: [] });
+        save(); render();
+        toast('Carte n°' + num + ' ajoutée.');
+      };
+      if (pending) {
+        confirmSheet({
+          title: 'Une carte est déjà en attente',
+          text: 'Vous avez déjà ' + pending + ' carte(s) non entamée(s). Ajouter la carte n°' + num + ' malgré tout ?',
+          okLabel: 'Ajouter la carte',
+          onConfirm: go
+        });
+      } else { go(); }
+      return;
+    }
+
+    if (hasDate(iso)) {
+      confirmSheet({
+        title: 'Date déjà enregistrée',
+        text: 'Une séance existe déjà le ' + fmt(iso) + '. Ajouter une seconde séance ce jour-là ?',
+        okLabel: 'Ajouter quand même',
+        onConfirm: function () { addSession(iso); }
+      });
+      return;
+    }
+    addSession(iso);
+  });
+
+  function askDeleteSession(item) {
+    confirmSheet({
+      title: 'Supprimer cette séance ?',
+      text: 'La séance du ' + fmt(item.date) + ' sera retirée de la carte.',
+      okLabel: 'Supprimer',
+      danger: true,
+      onConfirm: function () {
+        state.cards.forEach(function (c) {
+          c.sessions = c.sessions.filter(function (s) { return s.id !== item.id; });
+        });
+        save(); render();
+        toast('Séance supprimée.');
+      }
+    });
+  }
+
+  function askDeleteCard(c) {
+    confirmSheet({
+      title: 'Supprimer la carte n°' + c.number + ' ?',
+      text: 'Cette carte ne contient aucune séance. Elle sera retirée définitivement.',
+      okLabel: 'Supprimer',
+      danger: true,
+      onConfirm: function () {
+        state.cards = state.cards.filter(function (x) { return x.id !== c.id; });
+        openPack = null;
+        save(); render();
+        toast('Carte supprimée.');
+      }
+    });
+  }
+
+  /* ---------- Export CSV ---------- */
+  function buildCSV() {
+    var lines = ['Carte;Date achat;Statut;Seance;Date;Date ISO'];
+    var active = activeCard();
+    state.cards.forEach(function (c) {
+      var achat = c.purchase ? fmt(c.purchase) : '';
+      var statut = (active && active.id === c.id) ? 'En cours'
+        : (c.sessions.length >= state.size ? 'Terminee' : 'En attente');
+      if (!c.sessions.length) {
+        lines.push([c.number, achat, statut, 0, '', ''].join(';'));
+        return;
+      }
+      c.sessions.forEach(function (s, i) {
+        lines.push([c.number, achat, statut, i + 1, fmt(s.date), s.date].join(';'));
+      });
+    });
+    return '\uFEFF' + lines.join('\r\n') + '\r\n';
+  }
+
+  el('exportBtn').addEventListener('click', function () {
+    var csv = buildCSV();
+    var name = 'reprises-' + todayISO() + '.csv';
+    var file = null;
+    try { file = new File([csv], name, { type: 'text/csv' }); } catch (e) { file = null; }
+
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: 'Mes reprises' }).catch(function () {});
+      return;
+    }
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    toast('Export généré.');
+  });
+
+  /* ---------- Import CSV ---------- */
+  el('importBtn').addEventListener('click', function () { el('importFile').click(); });
+
+  el('importFile').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try { applyCSV(String(reader.result)); }
+      catch (err) { toast('Fichier illisible. Utilisez un export de cette application.'); }
+      el('importFile').value = '';
+    };
+    reader.readAsText(f);
+  });
+
+  function applyCSV(text) {
+    var rows = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter(function (l) { return l.trim(); });
+    if (!rows.length) throw new Error('vide');
+    var header = rows.shift();
+    var v2 = header.indexOf('Carte') === 0;
+
+    var byNum = {}, order = [];
+    rows.forEach(function (line) {
+      var c = line.split(';');
+      var num = parseInt(c[0], 10);
+      if (!num) return;
+      var iso = String(v2 ? (c[5] || '') : (c[4] || '')).trim();
+      var purchase = v2 ? frToIso(c[1]) : null;
+      if (!byNum[num]) { byNum[num] = { number: num, purchase: purchase, sessions: [] }; order.push(num); }
+      if (purchase && !byNum[num].purchase) byNum[num].purchase = purchase;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) byNum[num].sessions.push({ id: newId(), date: iso });
+    });
+    if (!order.length) throw new Error('aucune ligne valide');
+    order.sort(function (a, b) { return a - b; });
+
+    var rebuilt = blankState();
+    order.forEach(function (n) {
+      rebuilt.cards.push({
+        id: newId(), number: byNum[n].number,
+        purchase: byNum[n].purchase, sessions: byNum[n].sessions
+      });
+    });
+
+    var total = rebuilt.cards.reduce(function (n, c) { return n + c.sessions.length; }, 0);
+    confirmSheet({
+      title: 'Restaurer cette sauvegarde ?',
+      text: total + ' séances sur ' + rebuilt.cards.length + ' carte(s) vont remplacer les données actuelles.',
+      okLabel: 'Restaurer',
+      danger: true,
+      onConfirm: function () {
+        state = rebuilt; openPack = null;
+        save(); render();
+        toast('Sauvegarde restaurée.');
+      }
+    });
+  }
+
+  /* ---------- Démarrage ---------- */
+  load();
+  render();
+
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+    window.addEventListener('load', function () {
+      try { navigator.serviceWorker.register('./sw.js').catch(function () {}); } catch (e) {}
+    });
+  }
+})();
+</script>
+</body>
+</html>
